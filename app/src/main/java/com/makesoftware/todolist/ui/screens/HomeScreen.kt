@@ -1,7 +1,6 @@
 package com.makesoftware.todolist.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +9,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Create
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -17,61 +17,117 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.makesoftware.todolist.model.TodoActivity
-import kotlinx.coroutines.android.awaitFrame
-import kotlinx.coroutines.delay
+import com.makesoftware.todolist.ui.viewmodel.TodoListViewModel
 
 @Composable
 fun HomeScreen(
+    viewModel: TodoListViewModel,
     todoList: List<TodoActivity>,
     modifier: Modifier = Modifier,
-    onActivityCheck: (Int, Boolean) -> Unit,
-    onEditRequest: (Int) -> Unit,
-    onActivityActionChanged: (Int, String) -> Unit,
-    onUpdate: (Int) -> Unit
+    isNewTodoItemBeingCreated: Boolean,
+    onSaveNewItem: () -> Unit
 ) {
     LazyColumn(modifier = modifier) {
         items(todoList.size) {
             TodoCard(
-                isActivityChecked = todoList[it].isDone,
+                activityId = it,
                 activityAction = todoList[it].action,
-                activityId = todoList[it].id,
+                isActivityChecked = todoList[it].isDone,
+                isActivityActionReadOnly = todoList[it].isActionReadonly,
+                onCheckAsDone = { activityId: Int, isChecked: Boolean ->
+                    viewModel.checkActivity(activityId, isChecked)
+                },
+                onEditRequest = { activityId ->
+                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
+                },
+                onMarkAsEditionCompleted = { activityId ->
+                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
+                },
+                onActivityActionChanged = { activityId: Int, newAction: String ->
+                    viewModel.updateActivityAction(activityId, newAction)
+                },
+                onDelete = { activityId: Int ->
+                    viewModel.deleteActivity(activityId)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 10.dp),
-                onCheck = onActivityCheck,
-                onEditRequest = onEditRequest,
-                onUpdate = onUpdate,
-                onActivityActionChanged = onActivityActionChanged,
-                isActivityActionReadOnly = todoList[it].isActionReadonly
             )
         }
+
+        if (isNewTodoItemBeingCreated) {
+            item {
+                TemporaryTodoCard(
+                    onSave = { todoItemAction ->
+                        viewModel.createActivity(todoItemAction)
+
+                        onSaveNewItem()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                )
+            }
+        }
     }
+}
+
+@Composable
+fun TemporaryTodoCard(
+    modifier: Modifier = Modifier, onSave: (String) -> Unit
+) {
+    var todoAction by remember { mutableStateOf("") }
+
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    TodoCard(
+        modifier = modifier,
+        activityId = 0,
+        activityAction = todoAction,
+        isActivityChecked = false,
+        onActivityActionChanged = { _: Int, todoItemAction: String ->
+            todoAction = todoItemAction
+        },
+        onMarkAsEditionCompleted = {
+            onSave(todoAction)
+        },
+        isActivityActionReadOnly = false,
+        actionFocusRequester = focusRequester
+    )
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun TodoCard(
-    isActivityChecked: Boolean,
-    activityAction: String,
-    activityId: Int,
     modifier: Modifier = Modifier,
-    onCheck: (Int, Boolean) -> Unit,
-    onEditRequest: (Int) -> Unit,
+    activityId: Int,
+    activityAction: String,
+    isActivityChecked: Boolean,
+    actionFocusRequester: FocusRequester = remember { FocusRequester() },
+    onCheckAsDone: (Int, Boolean) -> Unit = { _: Int, _: Boolean -> },
+    onEditRequest: (Int) -> Unit = {},
     onActivityActionChanged: (Int, String) -> Unit,
     isActivityActionReadOnly: Boolean,
-    onUpdate: (Int) -> Unit
+    onMarkAsEditionCompleted: (Int) -> Unit,
+    onDelete: (Int) -> Unit = {},
 ) {
     Card(modifier = modifier) {
         Row(
@@ -79,12 +135,12 @@ fun TodoCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = modifier.fillMaxWidth()
         ) {
-            val actionFocusRequester = remember { FocusRequester() }
-
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1F)
             ) {
-                Checkbox(checked = isActivityChecked, onCheckedChange = { onCheck(activityId, it) })
+                Checkbox(
+                    checked = isActivityChecked,
+                    onCheckedChange = { onCheckAsDone(activityId, it) })
 
                 val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -110,9 +166,13 @@ fun TodoCard(
                     Icon(Icons.Outlined.Create, contentDescription = null)
                 }
             } else {
-                IconButton(onClick = { onUpdate(activityId) }) {
+                IconButton(onClick = { onMarkAsEditionCompleted(activityId) }) {
                     Icon(Icons.Outlined.Check, contentDescription = null)
                 }
+            }
+
+            IconButton(onClick = { onDelete(activityId) }) {
+                Icon(Icons.Outlined.Delete, contentDescription = null)
             }
         }
     }

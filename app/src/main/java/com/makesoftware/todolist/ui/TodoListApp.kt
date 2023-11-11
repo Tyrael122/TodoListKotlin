@@ -50,24 +50,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.makesoftware.todolist.R
 import com.makesoftware.todolist.ui.screens.HomeScreen
 import com.makesoftware.todolist.ui.viewmodel.TodoListViewModel
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoListApp(modifier: Modifier = Modifier, viewModel: TodoListViewModel = viewModel()) {
-
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    var isCreateBottomSheetVisible by remember { mutableStateOf(false) }
-
-    val createBottomSheetFocusRequester = remember { FocusRequester() }
+    var isNewTodoItemBeingCreated by remember { mutableStateOf(false) }
 
     Scaffold(topBar = { TodoListTopBar() }, bottomBar = {
         TodoListBottomBar(onAdd = {
-            viewModel.createActivity("")
-
-//            isCreateBottomSheetVisible = true
-//            createBottomSheetFocusRequester.requestFocus()
+            isNewTodoItemBeingCreated = true
         }, onGoToWebClick = {}, onMoreClick = {})
     }) {
         Surface(
@@ -77,34 +67,17 @@ fun TodoListApp(modifier: Modifier = Modifier, viewModel: TodoListViewModel = vi
         ) {
             val uiState = viewModel.todoUiState
 
-            HomeScreen(todoList = uiState.todoList,
+            HomeScreen(
+                viewModel = viewModel,
+                todoList = uiState.todoList,
+                isNewTodoItemBeingCreated = isNewTodoItemBeingCreated,
+                onSaveNewItem = {
+                    isNewTodoItemBeingCreated = false
+                },
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
-                    .padding(top = 10.dp),
-                onActivityCheck = { activityId: Int, isChecked: Boolean ->
-                    viewModel.checkActivity(activityId, isChecked)
-                },
-                onEditRequest = { activityId ->
-                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
-                },
-                onUpdate = { activityId ->
-                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
-                },
-                onActivityActionChanged = { activityId: Int, newAction: String ->
-                    viewModel.updateActivityAction(activityId, newAction)
-                })
-
-            if (isCreateBottomSheetVisible) {
-                CreateActivityBottomSheet(onSave = { /*TODO*/ }, onDismiss = {
-                    scope.launch {
-                        sheetState.hide()
-                    }.invokeOnCompletion {
-                        if (!sheetState.isVisible) {
-                            isCreateBottomSheetVisible = false
-                        }
-                    }
-                }, sheetState = sheetState, focusRequester = createBottomSheetFocusRequester)
-            }
+                    .padding(top = 10.dp)
+            )
         }
     }
 }
