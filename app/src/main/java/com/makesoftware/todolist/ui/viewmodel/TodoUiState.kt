@@ -1,7 +1,7 @@
 package com.makesoftware.todolist.ui.viewmodel
 
-import com.makesoftware.todolist.model.TodoActivity
+import com.makesoftware.todolist.model.TodoItem
 
 data class TodoUiState(
-    val todoList: List<TodoActivity>
+    val todoList: List<TodoItem>
 )

@@ -1,8 +1,11 @@
 package com.makesoftware.todolist.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imeNestedScroll
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.BasicTextField
@@ -30,18 +33,18 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import com.makesoftware.todolist.model.TodoActivity
+import com.makesoftware.todolist.model.TodoItem
 import com.makesoftware.todolist.ui.viewmodel.TodoListViewModel
 
 @Composable
 fun HomeScreen(
     viewModel: TodoListViewModel,
-    todoList: List<TodoActivity>,
+    todoList: List<TodoItem>,
     modifier: Modifier = Modifier,
     isNewTodoItemBeingCreated: Boolean,
     onSaveNewItem: () -> Unit
 ) {
-    LazyColumn(modifier = modifier) {
+    LazyColumn(modifier = modifier.imePadding()) {
         items(todoList.size) {
             TodoCard(
                 activityId = it,
@@ -49,23 +52,23 @@ fun HomeScreen(
                 isActivityChecked = todoList[it].isDone,
                 isActivityActionReadOnly = todoList[it].isActionReadonly,
                 onCheckAsDone = { activityId: Int, isChecked: Boolean ->
-                    viewModel.checkActivity(activityId, isChecked)
+                    viewModel.checkTodoItem(activityId, isChecked)
                 },
-                onEditRequest = { activityId ->
-                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
+                onEditRequest = { todoItemIndex ->
+                    viewModel.setTodoItemForEdition(todoItemIndex)
                 },
-                onMarkAsEditionCompleted = { activityId ->
-                    viewModel.toggleReadOnlyStateForActivityAction(activityId)
+                onMarkAsEditionCompleted = {
+                    viewModel.saveTodoItemEdition()
                 },
                 onActivityActionChanged = { activityId: Int, newAction: String ->
-                    viewModel.updateActivityAction(activityId, newAction)
+                    viewModel.updateTodoItemAction(activityId, newAction)
                 },
                 onDelete = { activityId: Int ->
-                    viewModel.deleteActivity(activityId)
+                    viewModel.deleteTodoItem(activityId)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 10.dp),
+                    .padding(vertical = 10.dp)
             )
         }
 
@@ -73,7 +76,7 @@ fun HomeScreen(
             item {
                 TemporaryTodoCard(
                     onSave = { todoItemAction ->
-                        viewModel.createActivity(todoItemAction)
+                        viewModel.createTodoItem(todoItemAction)
 
                         onSaveNewItem()
                     },
@@ -84,34 +87,6 @@ fun HomeScreen(
             }
         }
     }
-}
-
-@Composable
-fun TemporaryTodoCard(
-    modifier: Modifier = Modifier, onSave: (String) -> Unit
-) {
-    var todoAction by remember { mutableStateOf("") }
-
-    val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
-    TodoCard(
-        modifier = modifier,
-        activityId = 0,
-        activityAction = todoAction,
-        isActivityChecked = false,
-        onActivityActionChanged = { _: Int, todoItemAction: String ->
-            todoAction = todoItemAction
-        },
-        onMarkAsEditionCompleted = {
-            onSave(todoAction)
-        },
-        isActivityActionReadOnly = false,
-        actionFocusRequester = focusRequester
-    )
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -126,7 +101,7 @@ fun TodoCard(
     onEditRequest: (Int) -> Unit = {},
     onActivityActionChanged: (Int, String) -> Unit,
     isActivityActionReadOnly: Boolean,
-    onMarkAsEditionCompleted: (Int) -> Unit,
+    onMarkAsEditionCompleted: () -> Unit,
     onDelete: (Int) -> Unit = {},
 ) {
     Card(modifier = modifier) {
@@ -166,7 +141,7 @@ fun TodoCard(
                     Icon(Icons.Outlined.Create, contentDescription = null)
                 }
             } else {
-                IconButton(onClick = { onMarkAsEditionCompleted(activityId) }) {
+                IconButton(onClick = { onMarkAsEditionCompleted() }) {
                     Icon(Icons.Outlined.Check, contentDescription = null)
                 }
             }
@@ -176,4 +151,32 @@ fun TodoCard(
             }
         }
     }
+}
+
+@Composable
+fun TemporaryTodoCard(
+    modifier: Modifier = Modifier, onSave: (String) -> Unit
+) {
+    var todoAction by remember { mutableStateOf("") }
+
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    TodoCard(
+        modifier = modifier,
+        activityId = 0,
+        activityAction = todoAction,
+        isActivityChecked = false,
+        onActivityActionChanged = { _: Int, todoItemAction: String ->
+            todoAction = todoItemAction
+        },
+        onMarkAsEditionCompleted = {
+            onSave(todoAction)
+        },
+        isActivityActionReadOnly = false,
+        actionFocusRequester = focusRequester
+    )
 }

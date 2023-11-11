@@ -58,6 +58,7 @@ fun TodoListApp(modifier: Modifier = Modifier, viewModel: TodoListViewModel = vi
     Scaffold(topBar = { TodoListTopBar() }, bottomBar = {
         TodoListBottomBar(onAdd = {
             isNewTodoItemBeingCreated = true
+            viewModel.notifyNewTodoItemIsBeingCreated()
         }, onGoToWebClick = {}, onMoreClick = {})
     }) {
         Surface(
@@ -72,7 +73,7 @@ fun TodoListApp(modifier: Modifier = Modifier, viewModel: TodoListViewModel = vi
                 todoList = uiState.todoList,
                 isNewTodoItemBeingCreated = isNewTodoItemBeingCreated,
                 onSaveNewItem = {
-                    isNewTodoItemBeingCreated = false
+                    isNewTodoItemBeingCreated = false // TODO: Pass this to the ui state
                 },
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
@@ -129,49 +130,6 @@ fun TodoListBottomBar(
 
             IconButton(onClick = onMoreClick) {
                 Icon(Icons.Outlined.MoreVert, contentDescription = null)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-@Composable
-fun CreateActivityBottomSheet(
-    onSave: () -> Unit,
-    onDismiss: () -> Unit,
-    sheetState: SheetState,
-    focusRequester: FocusRequester,
-    modifier: Modifier = Modifier
-) {
-    var temporaryAction by remember { mutableStateOf("") }
-
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    ModalBottomSheet(
-        onDismissRequest = { onDismiss() }, sheetState = sheetState, modifier = modifier
-    ) {
-        Column(modifier = Modifier.fillMaxHeight(0.3F)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-            ) {
-                TextField(value = temporaryAction, onValueChange = {
-                    temporaryAction = it
-                }, keyboardActions = KeyboardActions(onDone = {
-                    onSave()
-                    onDismiss()
-                }), modifier = Modifier
-                    .focusRequester(focusRequester)
-                    .onFocusChanged {
-                        keyboardController?.show()
-                    })
-
-                IconButton(onClick = { onSave() }) {
-                    Icon(Icons.Outlined.Check, contentDescription = null)
-                }
             }
         }
     }

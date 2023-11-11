@@ -4,58 +4,95 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.makesoftware.todolist.model.TodoActivity
+import com.makesoftware.todolist.model.TodoItem
 
 class TodoListViewModel : ViewModel() {
-    private val sampleInitialActivity = TodoActivity("Passear com o cachorro da vizinha e não deixar seu coco na rua para não levar multa")
+    private val sampleInitialTodoItem =
+        TodoItem("Passear com o cachorro da vizinha e não deixar seu coco na rua para não levar multa")
 
-    var todoUiState: TodoUiState by mutableStateOf(TodoUiState(listOf(sampleInitialActivity)))
+    var todoUiState: TodoUiState by mutableStateOf(
+        TodoUiState(
+            listOf(
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem,
+                sampleInitialTodoItem
+            )
+        )
+    )
         private set
 
-    private val mutableTodoList: MutableList<TodoActivity> = mutableListOf(sampleInitialActivity)
+    private val mutableTodoList: MutableList<TodoItem> = mutableListOf(sampleInitialTodoItem)
 
-    fun createActivity(action: String) {
-        mutableTodoList.add(TodoActivity(action = action, isActionReadonly = false))
+    private var indexTodoItemBeingEdited: Int? = null
+
+    fun createTodoItem(action: String) {
+        mutableTodoList.add(TodoItem(action = action))
 
         updateUiStateWithTodoList()
     }
 
-    fun updateActivityAction(activityIndex: Int, newAction: String) {
-        val updatedActivity = todoUiState.todoList[activityIndex].copy(
+    fun notifyNewTodoItemIsBeingCreated() {
+        saveTodoItemEdition()
+    }
+
+    fun setTodoItemForEdition(todoItemIndex: Int) {
+        saveTodoItemEdition()
+
+        setReadOnlyStateForTodoItemAction(todoItemIndex, false)
+
+        indexTodoItemBeingEdited = todoItemIndex
+    }
+
+    fun saveTodoItemEdition() {
+        if (indexTodoItemBeingEdited == null) {
+            return
+        }
+
+        indexTodoItemBeingEdited?.let { setReadOnlyStateForTodoItemAction(it, true) }
+
+        indexTodoItemBeingEdited = null
+    }
+
+    fun updateTodoItemAction(todoItemIndex: Int, newAction: String) {
+        val updatedTodoItem = todoUiState.todoList[todoItemIndex].copy(
             action = newAction
         )
 
-        mutableTodoList[activityIndex] = updatedActivity
+        mutableTodoList[todoItemIndex] = updatedTodoItem
 
         updateUiStateWithTodoList()
     }
 
-    fun checkActivity(activityIndex: Int, isChecked: Boolean) {
-        val updatedActivity = todoUiState.todoList[activityIndex].copy(
+    fun checkTodoItem(todoItemIndex: Int, isChecked: Boolean) {
+        val updatedTodoItem = todoUiState.todoList[todoItemIndex].copy(
             isDone = isChecked
         )
 
-        mutableTodoList[activityIndex] = updatedActivity
+        mutableTodoList[todoItemIndex] = updatedTodoItem
         updateUiStateWithTodoList()
     }
 
-    fun deleteActivity(activityIndex: Int) {
+    fun deleteTodoItem(activityIndex: Int) {
         mutableTodoList.removeAt(activityIndex)
 
         updateUiStateWithTodoList()
     }
 
-    fun toggleReadOnlyStateForActivityAction(activityIndex: Int) {
-        val currentState = todoUiState.todoList[activityIndex].isActionReadonly
+    private fun updateUiStateWithTodoList() {
+        todoUiState = TodoUiState(mutableTodoList.toList())
+    }
+
+    private fun setReadOnlyStateForTodoItemAction(activityIndex: Int, isReadOnly: Boolean) {
         val updatedActivity = todoUiState.todoList[activityIndex].copy(
-            isActionReadonly = !currentState
+            isActionReadonly = isReadOnly
         )
 
         mutableTodoList[activityIndex] = updatedActivity
         updateUiStateWithTodoList()
-    }
-
-    private fun updateUiStateWithTodoList() {
-        todoUiState = TodoUiState(mutableTodoList.toList())
     }
 }
