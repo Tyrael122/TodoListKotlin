@@ -62,6 +62,10 @@ class TodoListViewModel : ViewModel() {
     }
 
     fun checkTodoItem(todoItemIndex: Int, isChecked: Boolean) {
+        if (todoItemIndex == indexTodoItemBeingEdited) {
+            return
+        }
+
         val updatedTodoItem = todoUiState.todoList[todoItemIndex].copy(
             isDone = isChecked
         )
