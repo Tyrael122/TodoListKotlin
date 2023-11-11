@@ -13,13 +13,6 @@ class TodoListViewModel : ViewModel() {
     var todoUiState: TodoUiState by mutableStateOf(
         TodoUiState(
             listOf(
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
-                sampleInitialTodoItem,
                 sampleInitialTodoItem
             )
         )
