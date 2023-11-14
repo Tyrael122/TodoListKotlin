@@ -1,10 +1,8 @@
 package com.makesoftware.todolist.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -42,7 +40,8 @@ fun HomeScreen(
     todoList: List<TodoItem>,
     modifier: Modifier = Modifier,
     isNewTodoItemBeingCreated: Boolean,
-    onSaveNewItem: () -> Unit
+    onSaveNewItem: () -> Unit,
+    onCancelNewItem: () -> Unit
 ) {
     LazyColumn(modifier = modifier.imePadding()) {
         items(todoList.size) {
@@ -80,6 +79,9 @@ fun HomeScreen(
 
                         onSaveNewItem()
                     },
+                    onCancel = {
+                        onCancelNewItem()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 10.dp),
@@ -113,8 +115,7 @@ fun TodoCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1F)
             ) {
-                Checkbox(
-                    checked = isActivityChecked,
+                Checkbox(checked = isActivityChecked,
                     onCheckedChange = { onCheckAsDone(activityId, it) })
 
                 val keyboardController = LocalSoftwareKeyboardController.current
@@ -155,7 +156,7 @@ fun TodoCard(
 
 @Composable
 fun TemporaryTodoCard(
-    modifier: Modifier = Modifier, onSave: (String) -> Unit
+    modifier: Modifier = Modifier, onSave: (String) -> Unit, onCancel: () -> Unit
 ) {
     var todoAction by remember { mutableStateOf("") }
 
@@ -175,6 +176,9 @@ fun TemporaryTodoCard(
         },
         onMarkAsEditionCompleted = {
             onSave(todoAction)
+        },
+        onDelete = {
+            onCancel()
         },
         isActivityActionReadOnly = false,
         actionFocusRequester = focusRequester
