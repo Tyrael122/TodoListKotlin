@@ -8,7 +8,7 @@ import com.makesoftware.todolist.model.TodoItem
 
 class TodoListViewModel : ViewModel() {
     private val sampleInitialTodoItem =
-        TodoItem("Passear com o cachorro da vizinha e não deixar seu coco na rua para não levar multa")
+        TodoItem("Passear com o cachorro da vizinha")
 
     var todoUiState: TodoUiState by mutableStateOf(
         TodoUiState(
